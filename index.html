@@ -1,0 +1,562 @@
+  
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collaborative Whiteboard with Voice</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        #canvas {
+            background-color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            touch-action: none;
+        }
+        .tool-btn.active {
+            background-color: #3b82f6 !important;
+            color: white !important;
+        }
+        .voice-active {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+            50% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-6">
+        <header class="mb-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+                <h1 class="text-3xl font-bold text-gray-800 mb-2 md:mb-0">Collaborative Whiteboard</h1>
+                <div class="flex items-center space-x-4">
+                    <button id="voiceBtn" class="flex items-center px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clip-rule="evenodd" />
+                        </svg>
+                        Voice Commands
+                    </button>
+                    <button id="connectBtn" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">
+                        Start Session
+                    </button>
+                </div>
+            </div>
+            <p class="text-gray-600 mt-2">Draw together in real-time with voice controls</p>
+        </header>
+
+        <div class="flex flex-col lg:flex-row gap-6">
+            <div class="lg:w-3/4">
+                <div class="bg-white rounded-xl p-4 shadow-md">
+                    <canvas id="canvas" width="1000" height="600" class="mx-auto border border-gray-200 rounded-md cursor-crosshair"></canvas>
+                </div>
+            </div>
+
+            <div class="lg:w-1/4 space-y-6">
+                <div class="bg-white rounded-xl p-4 shadow-md">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">Drawing Tools</h2>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button id="penTool" class="tool-btn active p-2 rounded-md border border-gray-200 hover:bg-gray-100">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                            <span class="text-sm mt-1 block">Pen</span>
+                        </button>
+                        <button id="lineTool" class="tool-btn p-2 rounded-md border border-gray-200 hover:bg-gray-100">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 20h16M4 4h16" />
+                            </svg>
+                            <span class="text-sm mt-1 block">Line</span>
+                        </button>
+                        <button id="rectTool" class="tool-btn p-2 rounded-md border border-gray-200 hover:bg-gray-100">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2" />
+                            </svg>
+                            <span class="text-sm mt-1 block">Rectangle</span>
+                        </button>
+                        <button id="circleTool" class="tool-btn p-2 rounded-md border border-gray-200 hover:bg-gray-100">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <circle cx="12" cy="12" r="10" stroke-width="2" />
+                            </svg>
+                            <span class="text-sm mt-1 block">Circle</span>
+                        </button>
+                        <button id="eraseTool" class="tool-btn p-2 rounded-md border border-gray-200 hover:bg-gray-100">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            <span class="text-sm mt-1 block">Eraser</span>
+                        </button>
+                        <button id="textTool" class="tool-btn p-2 rounded-md border border-gray-200 hover:bg-gray-100">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span class="text-sm mt-1 block">Text</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl p-4 shadow-md">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">Color Palette</h2>
+                    <div class="grid grid-cols-5 gap-2">
+                        <button class="color-btn w-8 h-8 rounded-full bg-black border-2 border-gray-300" data-color="#000000"></button>
+                        <button class="color-btn w-8 h-8 rounded-full bg-red-500 border-2 border-gray-300" data-color="#ef4444"></button>
+                        <button class="color-btn w-8 h-8 rounded-full bg-blue-500 border-2 border-gray-300" data-color="#3b82f6"></button>
+                        <button class="color-btn w-8 h-8 rounded-full bg-green-500 border-2 border-gray-300" data-color="#10b981"></button>
+                        <button class="color-btn w-8 h-8 rounded-full bg-yellow-500 border-2 border-gray-300" data-color="#f59e0b"></button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl p-4 shadow-md">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">Line Width</h2>
+                    <input type="range" id="lineWidth" min="1" max="20" value="5" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    <div class="flex justify-between text-sm text-gray-600 mt-1">
+                        <span>Thin</span>
+                        <span>Thick</span>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl p-4 shadow-md">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">Actions</h2>
+                    <div class="space-y-2">
+                        <button id="clearBtn" class="w-full px-4 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition">
+                            Clear Canvas
+                        </button>
+                        <button id="undoBtn" class="w-full px-4 py-2 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200 transition">
+                            Undo Last Action
+                        </button>
+                        <button id="exportBtn" class="w-full px-4 py-2 bg-green-100 text-green-600 rounded-md hover:bg-green-200 transition">
+                            Export as Image
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="voiceModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-xl p-6 w-full max-w-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold">Voice Commands</h3>
+                    <button id="closeVoiceModal" class="text-gray-500 hover:text-gray-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div id="voiceStatus" class="text-center py-4">
+                    <p class="text-gray-700">Click the microphone button and say commands like:</p>
+                    <ul class="mt-2 text-left space-y-1">
+                        <li>"Draw a red circle"</li>
+                        <li>"Draw a large blue circle"</li>
+                        <li>"Draw a green square"</li>
+                        <li>"Change color to blue"</li>
+                        <li>"Draw a thick line"</li>
+                        <li>"Undo last action"</li>
+                        <li>"Clear the canvas"</li>
+                    </ul>
+                </div>
+                <div class="flex justify-center mt-4">
+                    <button id="startListening" class="px-6 py-3 bg-indigo-500 text-white rounded-full hover:bg-indigo-600 transition voice-active">
+                        Start Listening
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const penTool = document.getElementById('penTool');
+            const lineTool = document.getElementById('lineTool');
+            const rectTool = document.getElementById('rectTool');
+            const circleTool = document.getElementById('circleTool');
+            const eraseTool = document.getElementById('eraseTool');
+            const colorBtns = document.querySelectorAll('.color-btn');
+            const lineWidthInput = document.getElementById('lineWidth');
+            const clearBtn = document.getElementById('clearBtn');
+            const undoBtn = document.getElementById('undoBtn');
+            const exportBtn = document.getElementById('exportBtn');
+            const voiceBtn = document.getElementById('voiceBtn');
+            const voiceModal = document.getElementById('voiceModal');
+            const closeVoiceModal = document.getElementById('closeVoiceModal');
+            const startListening = document.getElementById('startListening');
+            const voiceStatus = document.getElementById('voiceStatus');
+            const connectBtn = document.getElementById('connectBtn');
+
+            let isDrawing = false;
+            let currentTool = 'pen';
+            let currentColor = '#000000';
+            let currentLineWidth = 5;
+            let lastX = 0;
+            let lastY = 0;
+            let drawingHistory = [];
+            let currentHistoryIndex = -1;
+            let startX, startY;
+            let recognition;
+
+            // Initialize canvas
+            function initCanvas() {
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                saveCanvasState();
+            }
+
+            // Save canvas state to history
+            function saveCanvasState() {
+                // Remove any states after current index (for redo)
+                drawingHistory = drawingHistory.slice(0, currentHistoryIndex + 1);
+                
+                // Save current canvas state
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                drawingHistory.push(imageData);
+                currentHistoryIndex = drawingHistory.length - 1;
+            }
+
+            // Undo last action
+            function undo() {
+                if (currentHistoryIndex > 0) {
+                    currentHistoryIndex--;
+                    const imageData = drawingHistory[currentHistoryIndex];
+                    ctx.putImageData(imageData, 0, 0);
+                }
+            }
+
+            // Set up tools
+            function setupTools() {
+                // Tool buttons
+                const toolBtns = [penTool, lineTool, rectTool, circleTool, eraseTool, textTool];
+                
+                toolBtns.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        // Remove active class from all buttons
+                        toolBtns.forEach(b => b.classList.remove('active'));
+                        // Add active class to clicked button
+                        this.classList.add('active');
+                        
+                        // Set current tool
+                        currentTool = this.id.replace('Tool', '');
+                    });
+                });
+
+                // Color buttons
+                colorBtns.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        currentColor = this.dataset.color;
+                    });
+                });
+
+                // Line width
+                lineWidthInput.addEventListener('input', function() {
+                    currentLineWidth = this.value;
+                });
+
+                // Clear button
+                clearBtn.addEventListener('click', function() {
+                    if (confirm('Are you sure you want to clear the canvas?')) {
+                        ctx.fillStyle = 'white';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        saveCanvasState();
+                    }
+                });
+
+                // Undo button
+                undoBtn.addEventListener('click', undo);
+
+                // Export button
+                exportBtn.addEventListener('click', function() {
+                    const dataURL = canvas.toDataURL('image/png');
+                    const link = document.createElement('a');
+                    link.download = 'whiteboard.png';
+                    link.href = dataURL;
+                    link.click();
+                });
+            }
+
+            // Set up drawing events
+            function setupDrawingEvents() {
+                // Mouse events
+                canvas.addEventListener('mousedown', startDrawing);
+                canvas.addEventListener('mousemove', draw);
+                canvas.addEventListener('mouseup', stopDrawing);
+                canvas.addEventListener('mouseout', stopDrawing);
+
+                // Touch events for mobile
+                canvas.addEventListener('touchstart', handleTouch);
+                canvas.addEventListener('touchmove', handleTouch);
+                canvas.addEventListener('touchend', stopDrawing);
+            }
+
+            function handleTouch(e) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent(
+                    e.type === 'touchstart' ? 'mousedown' : 'mousemove',
+                    {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY
+                    }
+                );
+                canvas.dispatchEvent(mouseEvent);
+            }
+
+            function startDrawing(e) {
+                isDrawing = true;
+                [lastX, lastY] = [e.offsetX, e.offsetY];
+                
+                if (currentTool === 'line' || currentTool === 'rect' || currentTool === 'circle' || currentTool === 'text') {
+                    if (currentTool === 'text') {
+                        const text = prompt('Enter your text:', '');
+                        if (text) {
+                            ctx.font = `${currentLineWidth * 5}px Arial`;
+                            ctx.fillStyle = currentColor;
+                            ctx.fillText(text, lastX, lastY);
+                            saveCanvasState();
+                        }
+                        isDrawing = false;
+                        return;
+                    }
+                    startX = lastX;
+                    startY = lastY;
+                    saveCanvasState();
+                }
+            }
+
+            function draw(e) {
+                if (!isDrawing) return;
+                
+                const x = e.offsetX;
+                const y = e.offsetY;
+                
+                ctx.lineJoin = 'round';
+                ctx.lineCap = 'round';
+                
+                if (currentTool === 'pen') {
+                    ctx.beginPath();
+                    ctx.moveTo(lastX, lastY);
+                    ctx.lineTo(x, y);
+                    ctx.strokeStyle = currentColor;
+                    ctx.lineWidth = currentLineWidth;
+                    ctx.stroke();
+                    [lastX, lastY] = [x, y];
+                } 
+                else if (currentTool === 'erase') {
+                    ctx.beginPath();
+                    ctx.moveTo(lastX, lastY);
+                    ctx.lineTo(x, y);
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = currentLineWidth;
+                    ctx.stroke();
+                    [lastX, lastY] = [x, y];
+                }
+                else if (currentTool === 'line' || currentTool === 'rect' || currentTool === 'circle') {
+                    // Restore canvas to state before drawing started
+                    const imageData = drawingHistory[currentHistoryIndex];
+                    ctx.putImageData(imageData, 0, 0);
+                    
+                    ctx.beginPath();
+                    ctx.strokeStyle = currentColor;
+                    ctx.lineWidth = currentLineWidth;
+                    
+                    if (currentTool === 'line') {
+                        ctx.moveTo(startX, startY);
+                        ctx.lineTo(x, y);
+                        ctx.stroke();
+                    } 
+                    else if (currentTool === 'rect') {
+                        ctx.strokeRect(startX, startY, x - startX, y - startY);
+                    } 
+                    else if (currentTool === 'circle') {
+                        const radius = Math.sqrt(Math.pow(x - startX, 2) + Math.pow(y - startY, 2));
+                        ctx.arc(startX, startY, radius, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            function stopDrawing() {
+                isDrawing = false;
+                
+                if (currentTool === 'line' || currentTool === 'rect' || currentTool === 'circle') {
+                    saveCanvasState();
+                }
+            }
+
+            // Voice command setup
+            function setupVoiceCommands() {
+                // Check for speech recognition support
+                if (!('webkitSpeechRecognition' in window)) {
+                    voiceBtn.disabled = true;
+                    voiceBtn.innerHTML = 'Voice Not Supported';
+                    return;
+                }
+
+                recognition = new webkitSpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+
+                recognition.onresult = function(event) {
+                    const transcript = event.results[0][0].transcript.toLowerCase();
+                    processVoiceCommand(transcript);
+                };
+
+                recognition.onerror = function(event) {
+                    voiceStatus.textContent = 'Error occurred in recognition: ' + event.error;
+                    startListening.classList.remove('voice-active');
+                };
+
+                recognition.onend = function() {
+                    startListening.classList.remove('voice-active');
+                };
+
+                // Voice command button
+                voiceBtn.addEventListener('click', function() {
+                    voiceModal.classList.remove('hidden');
+                });
+
+                closeVoiceModal.addEventListener('click', function() {
+                    voiceModal.classList.add('hidden');
+                    if (recognition && recognition.running) {
+                        recognition.stop();
+                    }
+                });
+
+                startListening.addEventListener('click', function() {
+                    if (recognition.running) {
+                        recognition.stop();
+                    } else {
+                        voiceStatus.textContent = 'Listening... Speak now';
+                        startListening.classList.add('voice-active');
+                        recognition.start();
+                    }
+                });
+            }
+
+            function processVoiceCommand(command) {
+                voiceStatus.innerHTML = `Command: <span class="font-semibold">"${command}"</span><br>Processing...`;
+                
+                // Color commands
+                if (command.includes('red')) {
+                    currentColor = '#ef4444';
+                    setVoiceResponse('Changed color to red');
+                } else if (command.includes('blue')) {
+                    currentColor = '#3b82f6';
+                    setVoiceResponse('Changed color to blue');
+                } else if (command.includes('green')) {
+                    currentColor = '#10b981';
+                    setVoiceResponse('Changed color to green');
+                } else if (command.includes('black')) {
+                    currentColor = '#000000';
+                    setVoiceResponse('Changed color to black');
+                } else if (command.includes('yellow')) {
+                    currentColor = '#f59e0b';
+                    setVoiceResponse('Changed color to yellow');
+                }
+                
+                // Tool commands
+                else if (command.includes('pen') || command.includes('draw')) {
+                    penTool.click();
+                    setVoiceResponse('Selected pen tool');
+                } else if (command.includes('line')) {
+                    lineTool.click();
+                    setVoiceResponse('Selected line tool');
+                } else if (command.includes('rectangle')) {
+                    rectTool.click();
+                    setVoiceResponse('Selected rectangle tool');
+                } else if (command.includes('circle')) {
+                    circleTool.click();
+                    setVoiceResponse('Selected circle tool');
+                } else if (command.includes('erase') || command.includes('eraser')) {
+                    eraseTool.click();
+                    setVoiceResponse('Selected eraser');
+                } else if (command.includes('text') || command.includes('write')) {
+                    textTool.click();
+                    setVoiceResponse('Selected text tool');
+                }
+                
+                // Action commands
+                else if (command.includes('undo') || command.includes('go back')) {
+                    undo();
+                    setVoiceResponse('Undid last action');
+                } else if (command.includes('clear') || command.includes('clean')) {
+                    clearBtn.click();
+                    setVoiceResponse('Cleared the canvas');
+                } else if (command.includes('thick') || command.includes('thicker') || command.includes('large')) {
+                    lineWidthInput.value = 10;
+                    currentLineWidth = 10;
+                    setVoiceResponse('Set line width to thick');
+                } else if (command.includes('thin') || command.includes('thinner') || command.includes('small')) {
+                    lineWidthInput.value = 2;
+                    currentLineWidth = 2;
+                    setVoiceResponse('Set line width to thin');
+                }
+                
+                // Draw commands
+                else if (command.includes('draw') && command.includes('circle')) {
+                    const size = command.includes('small') ? 30 : 
+                                command.includes('large') ? 80 : 50;
+                    
+                    ctx.beginPath();
+                    ctx.fillStyle = currentColor;
+                    ctx.arc(400, 200, size, 0, Math.PI * 2);
+                    ctx.fill();
+                    saveCanvasState();
+                    setVoiceResponse(`Drew ${currentColor} circle`);
+                }
+                else if (command.includes('draw square') || command.includes('draw rectangle')) {
+                    ctx.fillStyle = currentColor;
+                    ctx.fillRect(500, 150, 100, 100);
+                    saveCanvasState();
+                    setVoiceResponse(`Drew ${currentColor} square`);
+                }
+                
+                else {
+                    setVoiceResponse("Command not recognized. Try saying 'draw a line', 'change color to blue', or 'undo'");
+                }
+            }
+
+            function setVoiceResponse(message) {
+                voiceStatus.innerHTML = `Command processed:<br>${message}`;
+            }
+
+            // Initialize everything
+            function init() {
+                initCanvas();
+                setupTools();
+                setupDrawingEvents();
+                setupVoiceCommands();
+                
+                // Draw initial example shapes
+                setTimeout(() => {
+                    // Set initial drawing properties
+                    ctx.strokeStyle = '#3b82f6';
+                    ctx.lineWidth = 3;
+                    ctx.fillStyle = '#3b82f620'; // Semi-transparent blue
+                    
+                    // Draw sample rectangle
+                    ctx.strokeRect(100, 100, 200, 150);
+                    
+                    // Draw sample circle
+                    ctx.beginPath();
+                    ctx.arc(300, 300, 50, 0, Math.PI * 2);
+                    ctx.stroke();
+                    
+                    // Draw sample text
+                    ctx.font = '20px Arial';
+                    ctx.fillStyle = '#000000';
+                    ctx.fillText('Try voice commands:', 150, 250);
+                    ctx.fillText('"Draw a red circle"', 150, 280);
+                    
+                    saveCanvasState();
+                }, 200);
+            }
+
+            init();
+        });
+    </script>
+</body>
+</html>
+
+
+
+
